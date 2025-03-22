@@ -8,7 +8,6 @@ ui_print " "
 
 if test -z '$(grep m1721 /system/build.prop)';
 then 
-  ui_print " "
   ui_print "- Device is not ' Meizu M6 Note ' , cannot install this kernel."
   exit 1
 fi
