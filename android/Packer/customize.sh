@@ -15,8 +15,6 @@ fi
 cd $MODPATH/tools/
 chmod +x magiskboot
 
-ui_print " "
-
 ui_print "- Extracting 'Boot' Image..."
 dd if=/dev/block/by-name/boot of=$MODPATH/boot.img
 ui_print "- Unpacking 'Boot' Image..."
