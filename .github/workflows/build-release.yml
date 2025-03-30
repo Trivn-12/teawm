@@ -79,7 +79,7 @@ jobs:
         if: env.CHECK_FILE_IS_OK == 'true'
         run: |
           cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/workdir/source/android/Packer/
-          sed -i '/description/ s/$/ Just installed K-Nel M1721 version: ${{ steps.get-tag.outputs.TAG_NAME }}/'  $GITHUB_WORKSPACE/workdir/source/android/Packer/module.prop
+          sed -i '/description/ s/$/ Just installed K-Nel M1721 version: ${{ steps.get-tag.outputs.TAG_NAME }} (NON-KSU)/'  $GITHUB_WORKSPACE/workdir/source/android/Packer/module.prop
           
       - name: Upload Kernel Package
         if: env.CHECK_FILE_IS_OK == 'true'
@@ -169,7 +169,7 @@ jobs:
         if: env.CHECK_FILE_IS_OK == 'true'
         run: |
           cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/workdir/source/android/Packer/
-          sed -i '/description/ s/$/ Just installed K-Nel M1721 version: ${{ steps.get-tag.outputs.TAG_NAME }}/'  $GITHUB_WORKSPACE/workdir/source/android/Packer/module.prop
+          sed -i '/description/ s/$/ Just installed K-Nel M1721 version: ${{ steps.get-tag.outputs.TAG_NAME }} With KSUN/'  $GITHUB_WORKSPACE/workdir/source/android/Packer/module.prop
           
       - name: Upload Kernel Package
         if: env.CHECK_FILE_IS_OK == 'true'
