@@ -1,12 +1,8 @@
 name: Build K-Nel M1721
 on:
-  workflow_call:
-  workflow_dispatch:
-    inputs:
-        LOCALVERSIONNAME:
-            description: 'Kernel Local Version Name'
-            required: true
-            default: 'Canary-Build' 
+  push:
+    tags:
+      - "C-*"
 
 jobs:
   build:
@@ -19,10 +15,6 @@ jobs:
         with:
           timezoneLinux: "Asia/Shanghai"
 
-      - name: Get branch names.
-        id: branch-names
-        uses: tj-actions/branch-names@v8
-
       - name: Set SWAP to 5GiB
         uses: pierotofy/set-swap-space@master
         with:
@@ -32,6 +24,11 @@ jobs:
         run: |
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          
+      - name: Get Tag Name
+        id: get-tag
+        run: |
+          echo "TAG_NAME=$(echo $GITHUB_REF | cut -d'/' -f3)" >> $GITHUB_OUTPUT
 
       - name: Initialize compilation environment
         run: |
@@ -49,7 +46,7 @@ jobs:
 
       - name: Get Kernel source
         run: |
-          git clone --recursive https://github.com/$GITHUB_REPOSITORY/ -b ${{ steps.branch-names.outputs.current_branch }} --depth 1 $GITHUB_WORKSPACE/workdir/source
+          git clone --recursive https://github.com/$GITHUB_REPOSITORY/ -b ${{ steps.get-tag.outputs.TAG_NAME }} --depth 1 $GITHUB_WORKSPACE/workdir/source
 
       - name: Enable Kernel-Assisted Superuser for Android
         run: |
@@ -65,7 +62,7 @@ jobs:
 
       - name: Build Kernel
         run: |
-          export LOCALVERSION=${{ github.event.inputs.LOCALVERSIONNAME }}
+          export LOCALVERSION=${{ steps.get-tag.outputs.TAG_NAME }}
           export KBUILD_BUILD_HOST=Github-Action
           export KBUILD_BUILD_USER=$(echo ${{ github.actor }} | tr A-Z a-z)
           export ARCH="arm64"
@@ -93,10 +90,11 @@ jobs:
         if: env.CHECK_FILE_IS_OK == 'true'
         run: |
           cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/workdir/source/android/Packer/
+          sed -i '/description/ s/$/ Just installed K-Nel M1721 version: ${{ steps.get-tag.outputs.TAG_NAME }}/'  $GITHUB_WORKSPACE/workdir/source/android/Packer/module.prop
           
       - name: Upload Kernel Package
         if: env.CHECK_FILE_IS_OK == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: K-Nel_M1721_Canary_AK3&APM_${{ env.BUILD_TIME }}
+          name: K-Nel_M1721_${{ steps.get-tag.outputs.TAG_NAME }}_AK3&APM_${{ env.BUILD_TIME }}
           path: workdir/source/android/Packer/*
