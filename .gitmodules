@@ -3,5 +3,5 @@
 	url = https://github.com/tomxi1997/lxc-docker-support-for-android.git
 [submodule "KernelSU"]
 	path = KernelSU
-	url = https://github.com/KJ-Network/SukiSU-Ultra.git
+	url = https://github.com/ShirkNeko/SukiSU-Ultra.git
 	branch = susfs-stable
