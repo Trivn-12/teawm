@@ -46,7 +46,7 @@ jobs:
 
       - name: Get Kernel source
         run: |
-          git clone --recursive https://github.com/$GITHUB_REPOSITORY/ -b ${{ steps.get-tag.outputs.TAG_NAME }} --depth 1 $GITHUB_WORKSPACE/workdir/source
+          git clone https://github.com/$GITHUB_REPOSITORY/ -b ${{ steps.get-tag.outputs.TAG_NAME }} --depth 1 $GITHUB_WORKSPACE/workdir/source
           
       - name: Processing submodules
         run: |
@@ -137,7 +137,7 @@ jobs:
 
       - name: Get Kernel source
         run: |
-          git clone --recursive https://github.com/$GITHUB_REPOSITORY/ -b ${{ steps.get-tag.outputs.TAG_NAME }} --depth 1 $GITHUB_WORKSPACE/workdir/source
+          git clone https://github.com/$GITHUB_REPOSITORY/ -b ${{ steps.get-tag.outputs.TAG_NAME }} --depth 1 $GITHUB_WORKSPACE/workdir/source
 
       - name: Processing submodules
         run: |
