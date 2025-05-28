@@ -1,0 +1,43 @@
+/*
+ * MSM8953 Performance Lock Configuration
+ * Lock CPU at 3.15GHz and GPU at 850MHz for maximum performance
+ */
+
+/ {
+	performance_lock: performance-lock {
+		compatible = "qcom,performance-lock";
+		
+		/* CPU Performance Lock Settings */
+		cpu-lock {
+			compatible = "qcom,cpu-lock";
+			qcom,cpu-freq-lock = <3150400>; /* 3.15GHz in KHz */
+			qcom,cpu-governor = "performance";
+			qcom,cpu-boost-enable;
+			qcom,cpu-thermal-limit-disable;
+		};
+		
+		/* GPU Performance Lock Settings */
+		gpu-lock {
+			compatible = "qcom,gpu-lock";
+			qcom,gpu-freq-lock = <850000000>; /* 850MHz in Hz */
+			qcom,gpu-power-level = <0>; /* Highest power level */
+			qcom,gpu-thermal-limit-disable;
+			qcom,gpu-devfreq-disable;
+		};
+		
+		/* Memory Performance Settings */
+		memory-lock {
+			compatible = "qcom,memory-lock";
+			qcom,ddr-freq-lock = <1296000000>; /* 1296MHz DDR */
+			qcom,bus-freq-lock = <12>; /* Maximum bus frequency */
+		};
+		
+		/* Thermal Override Settings */
+		thermal-override {
+			compatible = "qcom,thermal-override";
+			qcom,cpu-thermal-threshold = <95>; /* Higher thermal limit */
+			qcom,gpu-thermal-threshold = <90>; /* Higher thermal limit */
+			qcom,thermal-polling-delay = <1000>; /* 1 second */
+		};
+	};
+};

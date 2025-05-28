@@ -284,4 +284,10 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
 
 #endif /* __ASSEMBLY__ */
 
+/*
+ * Maximum possible physical memory bits for this architecture.
+ * With LPAE, we can address up to 40 bits of physical memory.
+ */
+#define MAX_POSSIBLE_PHYSMEM_BITS	40
+
 #endif /* _ASM_PGTABLE_3LEVEL_H */

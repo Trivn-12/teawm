@@ -225,4 +225,9 @@ static inline pte_t pte_mkspecial(pte_t pte) { return pte; }
 
 #endif /* __ASSEMBLY__ */
 
+/*
+ * Maximum possible physical memory bits for this architecture.
+ */
+#define MAX_POSSIBLE_PHYSMEM_BITS	32
+
 #endif /* _ASM_PGTABLE_2LEVEL_H */

@@ -42,8 +42,6 @@ zram_algs="lzo"
 
 zram_fill_fs()
 {
-	local mem_free0=$(free -m | awk 'NR==2 {print $4}')
-
 	for i in $(seq 0 $(($dev_num - 1))); do
 		echo "fill zram$i..."
 		local b=0
@@ -56,27 +54,45 @@ zram_fill_fs()
 		echo "zram$i can be filled with '$b' KB"
 	done
 
-	local mem_free1=$(free -m | awk 'NR==2 {print $4}')
-	local used_mem=$(($mem_free0 - $mem_free1))
+	# Use mm_stat for accurate memory usage calculation
+	local total_orig_size=0
+	local total_compr_size=0
+	local total_mem_used=0
 
-	local total_size=0
-	for sm in $zram_sizes; do
-		local s=$(echo $sm | sed 's/M//')
-		total_size=$(($total_size + $s))
+	for i in $(seq 0 $(($dev_num - 1))); do
+		local mm_stat="/sys/block/zram${i}/mm_stat"
+		if [ -e "$mm_stat" ]; then
+			# mm_stat format: orig_data_size compr_data_size mem_used_total mem_limit_total max_used_total same_pages pages_compacted huge_pages
+			local orig_size=$(awk '{print $1}' $mm_stat)
+			local compr_size=$(awk '{print $2}' $mm_stat)
+			local mem_used=$(awk '{print $3}' $mm_stat)
+
+			total_orig_size=$(($total_orig_size + $orig_size))
+			total_compr_size=$(($total_compr_size + $compr_size))
+			total_mem_used=$(($total_mem_used + $mem_used))
+		fi
 	done
 
-	echo "zram used ${used_mem}M, zram disk sizes ${total_size}M"
+	# Convert to MB for display
+	local orig_size_mb=$(($total_orig_size / 1024 / 1024))
+	local compr_size_mb=$(($total_compr_size / 1024 / 1024))
+	local mem_used_mb=$(($total_mem_used / 1024 / 1024))
 
-	local v=$((100 * $total_size / $used_mem))
+	echo "zram orig_data: ${orig_size_mb}M, compr_data: ${compr_size_mb}M, mem_used: ${mem_used_mb}M"
 
-	if [ "$v" -lt 100 ]; then
-		echo "FAIL compression ratio: 0.$v:1"
-		ERR_CODE=-1
-		zram_cleanup
-		return
+	# Calculate compression ratio
+	if [ $total_compr_size -gt 0 ]; then
+		local ratio=$((($total_orig_size * 100) / $total_compr_size))
+		if [ "$ratio" -lt 100 ]; then
+			echo "FAIL compression ratio: 0.$ratio:1"
+			ERR_CODE=-1
+			zram_cleanup
+			return
+		fi
+		echo "zram compression ratio: $(echo "scale=2; $ratio / 100 " | bc):1: OK"
+	else
+		echo "zram compression ratio: N/A (no compressed data)"
 	fi
-
-	echo "zram compression ratio: $(echo "scale=2; $v / 100 " | bc):1: OK"
 }
 
 check_prereqs

@@ -1,0 +1,102 @@
+# Performance Lock Init Service
+# Lock CPU at 3.15GHz and GPU at 850MHz
+
+service performance-lock /system/bin/performance-lock.sh
+    class late_start
+    user root
+    group root system
+    oneshot
+    disabled
+
+on property:sys.boot_completed=1
+    start performance-lock
+
+on property:dev.bootcomplete=1
+    start performance-lock
+
+# CPU Performance Settings
+on boot
+    # Set CPU governor to performance
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "performance"
+    write /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor "performance"
+    write /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor "performance"
+    write /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor "performance"
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor "performance"
+    write /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor "performance"
+    write /sys/devices/system/cpu/cpu6/cpufreq/scaling_governor "performance"
+    write /sys/devices/system/cpu/cpu7/cpufreq/scaling_governor "performance"
+    
+    # Lock CPU frequency to 3.15GHz
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq "3150400"
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq "3150400"
+    write /sys/devices/system/cpu/cpu1/cpufreq/scaling_min_freq "3150400"
+    write /sys/devices/system/cpu/cpu1/cpufreq/scaling_max_freq "3150400"
+    write /sys/devices/system/cpu/cpu2/cpufreq/scaling_min_freq "3150400"
+    write /sys/devices/system/cpu/cpu2/cpufreq/scaling_max_freq "3150400"
+    write /sys/devices/system/cpu/cpu3/cpufreq/scaling_min_freq "3150400"
+    write /sys/devices/system/cpu/cpu3/cpufreq/scaling_max_freq "3150400"
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq "3150400"
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq "3150400"
+    write /sys/devices/system/cpu/cpu5/cpufreq/scaling_min_freq "3150400"
+    write /sys/devices/system/cpu/cpu5/cpufreq/scaling_max_freq "3150400"
+    write /sys/devices/system/cpu/cpu6/cpufreq/scaling_min_freq "3150400"
+    write /sys/devices/system/cpu/cpu6/cpufreq/scaling_max_freq "3150400"
+    write /sys/devices/system/cpu/cpu7/cpufreq/scaling_min_freq "3150400"
+    write /sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq "3150400"
+    
+    # Disable CPU boost
+    write /sys/module/cpu_boost/parameters/cpu_boost "0"
+    
+    # Keep all CPUs online
+    write /sys/devices/system/cpu/cpu0/online "1"
+    write /sys/devices/system/cpu/cpu1/online "1"
+    write /sys/devices/system/cpu/cpu2/online "1"
+    write /sys/devices/system/cpu/cpu3/online "1"
+    write /sys/devices/system/cpu/cpu4/online "1"
+    write /sys/devices/system/cpu/cpu5/online "1"
+    write /sys/devices/system/cpu/cpu6/online "1"
+    write /sys/devices/system/cpu/cpu7/online "1"
+
+# GPU Performance Settings
+on boot
+    # Lock GPU to maximum power level (850MHz)
+    write /sys/class/kgsl/kgsl-3d0/default_pwrlevel "0"
+    write /sys/class/kgsl/kgsl-3d0/min_pwrlevel "0"
+    write /sys/class/kgsl/kgsl-3d0/max_pwrlevel "0"
+    
+    # Force GPU clock on
+    write /sys/class/kgsl/kgsl-3d0/force_clk_on "1"
+    
+    # Set GPU devfreq governor to performance
+    write /sys/class/kgsl/kgsl-3d0/devfreq/governor "performance"
+    
+    # Set GPU frequency directly
+    write /sys/class/kgsl/kgsl-3d0/gpuclk "850000000"
+
+# Thermal Settings
+on boot
+    # Increase thermal limits for performance
+    write /sys/class/thermal/thermal_zone0/trip_point_0_temp "95000"
+    write /sys/class/thermal/thermal_zone0/trip_point_1_temp "100000"
+    write /sys/class/thermal/thermal_zone1/trip_point_0_temp "95000"
+    write /sys/class/thermal/thermal_zone1/trip_point_1_temp "100000"
+
+# Memory Performance Settings
+on boot
+    # Set DDR frequency to maximum
+    write /sys/class/devfreq/soc:qcom,cpubw/governor "performance"
+    write /sys/class/devfreq/soc:qcom,mincpubw/governor "performance"
+    
+    # Disable power saving features
+    write /sys/module/msm_hotplug/parameters/enabled "0"
+    write /sys/devices/system/cpu/cpuidle/use_deepest_state "1"
+
+# I/O Performance Settings
+on boot
+    # Set I/O scheduler to performance
+    write /sys/block/mmcblk0/queue/scheduler "noop"
+    write /sys/block/mmcblk1/queue/scheduler "noop"
+    
+    # Increase I/O queue depth
+    write /sys/block/mmcblk0/queue/nr_requests "256"
+    write /sys/block/mmcblk1/queue/nr_requests "256"

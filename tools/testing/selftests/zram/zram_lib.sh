@@ -49,6 +49,10 @@ zram_cleanup()
 	for i in $(seq 0 $(($dev_num - 1))); do
 		echo 1 > /sys/block/zram${i}/reset
 		rm -rf zram$i
+		# Use hot_remove if available
+		if [ -e /sys/class/zram-control/hot_remove ]; then
+			echo $i > /sys/class/zram-control/hot_remove
+		fi
 	done
 
 }
@@ -84,6 +88,13 @@ zram_load()
 		fi
 	elif [ -b /dev/zram0 ]; then
 		echo "/dev/zram0 device file found: OK"
+		# Try to use hot_add if available (for zram-generator compatibility)
+		if [ -e /sys/class/zram-control/hot_add ]; then
+			echo "using hot_add interface"
+			for i in $(seq 1 $(($dev_num - 1))); do
+				echo $i > /sys/class/zram-control/hot_add
+			done
+		fi
 	else
 		echo "ERROR: No zram.ko module or no /dev/zram0 device found"
 		echo "$TCID : CONFIG_ZRAM is not set"
@@ -98,6 +109,12 @@ zram_max_streams()
 	local i=0
 	for max_s in $zram_max_streams; do
 		local sys_path="/sys/block/zram${i}/max_comp_streams"
+		# Skip max_comp_streams interface on newer kernels
+		if [ ! -e "$sys_path" ]; then
+			echo "skip max_comp_streams (not supported on this kernel)"
+			i=$(($i + 1))
+			continue
+		fi
 		echo $max_s > $sys_path || \
 			echo "FAIL failed to set '$max_s' to $sys_path"
 		sleep 1
