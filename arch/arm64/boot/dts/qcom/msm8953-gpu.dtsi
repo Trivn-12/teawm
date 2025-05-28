@@ -140,6 +140,10 @@
 		/* Enable gpu cooling device */
 		#cooling-cells = <2>;
 
+		/* Lock GPU at maximum frequency (850MHz) */
+		qcom,disable-wake-on-touch;
+		qcom,force-clk-on;
+
 		/* GPU Mempools */
 		qcom,gpu-mempools {
 			#address-cells= <1>;
@@ -283,10 +287,6 @@
 				qcom,bus-min = <0>;
 				qcom,bus-max = <0>;
 			};
-
-			/* Lock GPU at maximum frequency (850MHz) */
-			qcom,disable-wake-on-touch;
-			qcom,force-clk-on;
 		};
 	};
 
