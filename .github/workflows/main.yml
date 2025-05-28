@@ -1,0 +1,122 @@
+name: Build K111111-Nel M1721
+on:
+  push:
+    tags:
+      - "C-*"
+    branches:
+      - main    # Nếu bạn không muốn build khi push main thì xóa dòng này
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build K-Nel M1721 by ${{ github.actor }}
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: Set Beijing timezone
+        uses: szenius/set-timezone@v1.2
+        with:
+          timezoneLinux: "Asia/Shanghai"
+
+      - name: Set SWAP to 5GiB
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 5
+
+      - name: Clean useless files
+        run: |
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          
+      - name: Get Tag Name
+        id: get-tag
+        run: |
+          # Nếu chạy manual thì GITHUB_REF sẽ không phải tag, nên fallback
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "TAG_NAME=$(echo $GITHUB_REF | cut -d'/' -f3)" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_NAME=manual-run" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Initialize compilation environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install git automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib gcc-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler python3 ccache git-lfs gnupg imagemagick libelf-dev libncurses5-dev libsdl1.2-dev rsync adb fastboot libstdc++6 -y
+          mkdir -p $GITHUB_WORKSPACE/workdir
+          cd $GITHUB_WORKSPACE/workdir
+          echo "BUILD_TIME=$(TZ=Asia/Shanghai date "+%Y%m%d%H%M")" >> $GITHUB_ENV
+
+      - name: Get Toolchain
+        run: |
+          git clone https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b.git --depth 1 $GITHUB_WORKSPACE/workdir/toolchain/clang
+          git clone https://github.com/KJ-Network/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabi.git --depth=1 $GITHUB_WORKSPACE/workdir/toolchain/gcc32
+          git clone https://github.com/KJ-Network/gcc-linaro-5.5.0-2017.10-x86_64_aarch64-linux-gnu.git --depth=1 $GITHUB_WORKSPACE/workdir/toolchain/gcc64
+
+      - name: Get Kernel source
+        run: |
+          if [ "${{ steps.get-tag.outputs.TAG_NAME }}" = "manual-run" ]; then
+            git clone https://github.com/$GITHUB_REPOSITORY -b main --depth 1 $GITHUB_WORKSPACE/workdir/source
+          else
+            git clone https://github.com/$GITHUB_REPOSITORY -b ${{ steps.get-tag.outputs.TAG_NAME }} --depth 1 $GITHUB_WORKSPACE/workdir/source
+          fi
+
+      - name: Processing submodules
+        run: |
+          cd $GITHUB_WORKSPACE/workdir/source
+          git submodule update --init --remote --rebase --recursive KernelSU
+          sed -i -e '$a\'$'\n''CONFIG_KSU=y\nCONFIG_KPM=y\nCONFIG_KSU_SUSFS=y\nCONFIG_KSU_MANUAL_HOOK=y\nCONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y\nCONFIG_KSU_SUSFS_SUS_PATH=y\nCONFIG_KSU_SUSFS_SUS_MOUNT=y\nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y\nCONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y\nCONFIG_KSU_SUSFS_SUS_KSTAT=y\nCONFIG_KSU_SUSFS_TRY_UMOUNT=y\nCONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y\nCONFIG_KSU_SUSFS_SPOOF_UNAME=y\nCONFIG_KSU_SUSFS_ENABLE_LOG=y\nCONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y\nCONFIG_KSU_SUSFS_OPEN_REDIRECT=y' arch/arm64/configs/m1721_k-nel_defconfig
+          git submodule update --init --remote --rebase --recursive utils/lxc-docker
+          sed -i -e '$a\'$'\n''# CONFIG_ANDROID_PARANOID_NETWORK is not set\nCONFIG_DOCKER=y\nCONFIG_DOCKER_DEVICE_MAPPER=y\nCONFIG_DOCKER_OVERLAY_FS=y' arch/arm64/configs/m1721_k-nel_defconfig
+
+      - name: Build Kernel
+        run: |
+          export LOCALVERSION=${{ steps.get-tag.outputs.TAG_NAME }}
+          export KBUILD_BUILD_HOST=Github-Action
+          export KBUILD_BUILD_USER=$(echo ${{ github.actor }} | tr A-Z a-z)
+          export ARCH="arm64"
+          export SUBARCH="arm64"
+          export PATH="$GITHUB_WORKSPACE/workdir/toolchain/clang/bin:$GITHUB_WORKSPACE/workdir/toolchain/gcc32/bin:$GITHUB_WORKSPACE/workdir/toolchain/gcc64/bin:$PATH"
+          export CC="clang"
+          export CROSS_COMPILE="aarch64-linux-gnu-"
+          export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+          export TRIPLE="aarch64-linux-gnu-"
+          cd $GITHUB_WORKSPACE/workdir/source
+          make O=out m1721_k-nel_defconfig
+          make -j$(nproc --all) O=out
+
+      - name: Check a kernel output files
+        run: |
+          cd $GITHUB_WORKSPACE/workdir/source
+          if [ -f out/arch/arm64/boot/Image.gz-dtb ]; then
+              echo "CHECK_FILE_IS_OK=true" >> $GITHUB_ENV
+          else
+              echo "Kernel output file is empty"
+              exit 1
+          fi
+          
+      - name: Patch SukiSU Ultra KPM
+        if: env.CHECK_FILE_IS_OK == 'true'
+        run: |
+          mkdir $GITHUB_WORKSPACE/workdir/SukiSU-Patch
+          cd $GITHUB_WORKSPACE/workdir/SukiSU-Patch
+          wget https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
+          cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/Image .
+          cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/dts/qcom/*.dtb .
+          chmod +x patch_linux
+          ./patch_linux
+          mv -f oImage Image
+          gzip -k Image Image.gz
+          cat Image.gz *.dtb > Image.gz-dtb
+
+      - name: Pack Kernel
+        if: env.CHECK_FILE_IS_OK == 'true'
+        run: |
+          cp $GITHUB_WORKSPACE/workdir/SukiSU-Patch/Image.gz-dtb $GITHUB_WORKSPACE/workdir/source/android/Packer/
+          sed -i '/description/ s/$/ Just installed K-Nel M1721 version: ${{ steps.get-tag.outputs.TAG_NAME }}/'  $GITHUB_WORKSPACE/workdir/source/android/Packer/module.prop
+          
+      - name: Upload Kernel Package
+        if: env.CHECK_FILE_IS_OK == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: K-Nel_M1721_${{ steps.get-tag.outputs.TAG_NAME }}_AK3&APM_${{ env.BUILD_TIME }}
+          path: workdir/source/android/Packer/*
