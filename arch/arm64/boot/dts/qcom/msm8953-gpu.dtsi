@@ -70,7 +70,7 @@
 		qcom,id = <0>;
 		qcom,chipid = <0x05000600>;
 
-		qcom,initial-pwrlevel = <3>;
+		qcom,initial-pwrlevel = <5>;
 
 		qcom,idle-timeout = <80>; //msecs
 		qcom,deep-nap-timeout = <100>; //msecs
@@ -190,13 +190,13 @@
 
 			compatible = "qcom,gpu-pwrlevels";
 
-			/* TURBO+ (Overclock) */
+			/* TURBO+ (Stock max) */
 			qcom,gpu-pwrlevel@0 {
 				reg = <0>;
-				qcom,gpu-freq = <850000000>;
-				qcom,bus-freq = <12>;
-				qcom,bus-min = <12>;
-				qcom,bus-max = <12>;
+				qcom,gpu-freq = <650000000>;
+				qcom,bus-freq = <10>;
+				qcom,bus-min = <10>;
+				qcom,bus-max = <10>;
 			};
 
 			/* TURBO+ */
